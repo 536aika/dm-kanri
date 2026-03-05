@@ -1,33 +1,41 @@
-const STORAGE_KEY = 'dmBreakTimeEnd';
+const STORAGE_KEY_PREFIX = 'dmBreakTimeEnd';
 const LOCK_DURATION_MS = 60 * 60 * 1000; // 1 hour
 export const BREAK_AT_COUNTS = [25, 50, 75, 100, 125] as const;
+
+function getStorageKey(userName?: string): string {
+  if (userName?.trim()) {
+    return `${STORAGE_KEY_PREFIX}_${encodeURIComponent(userName.trim())}`;
+  }
+  return 'dmBreakTimeEnd'; // 後方互換
+}
 
 export function shouldStartBreak(currentCount: number): boolean {
   return BREAK_AT_COUNTS.includes(currentCount as 25 | 50 | 75 | 100 | 125);
 }
 
-export function getBreakEndTime(): number | null {
+export function getBreakEndTime(userName?: string): number | null {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const key = getStorageKey(userName);
+  const raw = localStorage.getItem(key);
   if (!raw) return null;
   const end = parseInt(raw, 10);
   if (Number.isNaN(end)) return null;
   return end;
 }
 
-export function setBreakLock(): void {
+export function setBreakLock(userName?: string): void {
   if (typeof window === 'undefined') return;
   const end = Date.now() + LOCK_DURATION_MS;
-  localStorage.setItem(STORAGE_KEY, String(end));
+  localStorage.setItem(getStorageKey(userName), String(end));
 }
 
-export function clearBreakLock(): void {
+export function clearBreakLock(userName?: string): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(getStorageKey(userName));
 }
 
-export function isBreakActive(): boolean {
-  const end = getBreakEndTime();
+export function isBreakActive(userName?: string): boolean {
+  const end = getBreakEndTime(userName);
   if (end === null) return false;
   return Date.now() < end;
 }
@@ -35,8 +43,8 @@ export function isBreakActive(): boolean {
 /**
  * Returns remaining milliseconds until break ends, or 0 if not active/expired
  */
-export function getRemainingMs(): number {
-  const end = getBreakEndTime();
+export function getRemainingMs(userName?: string): number {
+  const end = getBreakEndTime(userName);
   if (end === null) return 0;
   const remaining = end - Date.now();
   return remaining > 0 ? remaining : 0;

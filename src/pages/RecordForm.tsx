@@ -39,6 +39,7 @@ import {
 } from '../lib/breakTime';
 import Footer from '../components/Footer';
 import BreakTimeOverlay from '../components/BreakTimeOverlay';
+import { DM_USER_NAME_KEY } from '../constants';
 
 const DAILY_LIMIT = 150;
 
@@ -51,10 +52,20 @@ const initialForm: DmRecordForm = {
   hasChampagneTower: false,
 };
 
+function getStoredUserName(): string {
+  try {
+    return sessionStorage.getItem(DM_USER_NAME_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export default function RecordForm() {
   const location = useLocation();
   const navigate = useNavigate();
-  const userName = (location.state as { userName?: string } | null)?.userName ?? '';
+  const stateName = (location.state as { userName?: string } | null)?.userName ?? '';
+  const storedName = getStoredUserName();
+  const userName = stateName || storedName;
 
   const [form, setForm] = useState<DmRecordForm>({ ...initialForm, userName });
   const [todayCount, setTodayCount] = useState(0);
@@ -74,10 +85,11 @@ export default function RecordForm() {
   }, [userName, navigate]);
 
   useEffect(() => {
-    return subscribeTodayCount(setTodayCount);
-  }, []);
+    if (!userName) return;
+    return subscribeTodayCount(setTodayCount, userName);
+  }, [userName]);
 
-  const breakActive = isBreakActive();
+  const breakActive = isBreakActive(userName);
   const remainingFormatted = formatRemaining(breakEndRemaining);
 
   useEffect(() => {
@@ -86,14 +98,14 @@ export default function RecordForm() {
       return;
     }
     const tick = () => {
-      const ms = getRemainingMs();
+      const ms = getRemainingMs(userName);
       setBreakEndRemaining(ms);
-      if (ms <= 0) clearBreakLock();
+      if (ms <= 0) clearBreakLock(userName);
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [breakActive]);
+  }, [breakActive, userName]);
 
   const canSubmit =
     form.userName.trim() !== '' &&
@@ -118,7 +130,7 @@ export default function RecordForm() {
       await addDmRecord(payload);
       const newCount = todayCount + 1;
       if (shouldStartBreak(newCount)) {
-        setBreakLock();
+        setBreakLock(userName);
       }
       try {
         await fetch('/api/sheet', {
@@ -154,6 +166,11 @@ export default function RecordForm() {
   }, [canSubmit, form, todayCount]);
 
   const handleLogout = () => {
+    try {
+      sessionStorage.removeItem(DM_USER_NAME_KEY);
+    } catch {
+      // ignore
+    }
     navigate('/', { replace: true });
   };
 

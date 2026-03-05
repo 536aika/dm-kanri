@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import { DM_USER_NAME_KEY } from '../constants';
 
 export default function NameInput() {
   const [name, setName] = useState('');
@@ -16,6 +17,11 @@ export default function NameInput() {
   const handleStart = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
+    try {
+      sessionStorage.setItem(DM_USER_NAME_KEY, trimmed);
+    } catch {
+      // シークレットモード等で sessionStorage が使えない場合は state のみ
+    }
     navigate('/record', { state: { userName: trimmed } });
   };
 
