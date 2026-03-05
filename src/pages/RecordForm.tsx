@@ -161,11 +161,12 @@ export default function RecordForm() {
       // ネットワークエラー等
     }
     setSubmitting(false);
-    setForm((prev) => ({ ...initialForm, userName: prev.userName }));
-    setFormKey((k) => k + 1);
-    setSnackMessage(sheetOk ? '送信しました ✅' : '送信しました ✅（スプレッドシートへの反映に失敗しました）');
+    const message = sheetOk ? '送信しました ✅' : '送信しました ✅（スプレッドシートへの反映に失敗しました）';
+    setSnackMessage(message);
     setSnackSeverity('success');
     setSnackOpen(true);
+    setForm((prev) => ({ ...initialForm, userName: prev.userName }));
+    setFormKey((k) => k + 1);
   }, [canSubmit, form, todayCount, userName]);
 
   const handleLogout = () => {

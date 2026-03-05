@@ -97,14 +97,18 @@ export async function POST(request: Request): Promise<Response> {
       body.hasChampagneTower ? 'あり' : 'なし',
     ];
 
-    const range = `'${sheetTitle}'!A:G`;
-    const { data: existing } = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: `'${sheetTitle}'!A1:G1`,
-    });
-    const values = existing.values;
-    const hasHeader =
-      values && values.length > 0 && values[0]?.[0] === SHEET_HEADERS[0];
+    let hasHeader = false;
+    try {
+      const { data: existing } = await sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: `'${sheetTitle}'!A1:G1`,
+      });
+      const values = existing.values;
+      hasHeader =
+        !!values && values.length > 0 && values[0]?.[0] === SHEET_HEADERS[0];
+    } catch {
+      // シートが空または取得失敗時はヘッダーなしとして追記
+    }
     const appendRows = hasHeader ? [row] : [SHEET_HEADERS, row];
 
     await sheets.spreadsheets.values.append({

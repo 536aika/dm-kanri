@@ -54,7 +54,7 @@ export async function addDmRecord(form: DmRecordForm): Promise<string> {
 
 /**
  * Subscribe to today's record count (JST). If userName is given, counts only that user's records (per-person limit).
- * Returns unsubscribe function.
+ * Uses date-only query + client-side filter so no composite index is required.
  */
 export function subscribeTodayCount(
   onCount: (count: number) => void,
@@ -62,15 +62,22 @@ export function subscribeTodayCount(
 ): Unsubscribe {
   const firestore = getDb();
   const today = todayJST();
-  const constraints = [where('date', '==', today)];
-  if (userName?.trim()) {
-    constraints.push(where('userName', '==', userName.trim()));
-  }
-  const q = query(collection(firestore, COLLECTION), ...constraints);
+  const filterName = userName?.trim() ?? '';
+  const q = query(
+    collection(firestore, COLLECTION),
+    where('date', '==', today)
+  );
   return onSnapshot(
     q,
     (snapshot) => {
-      onCount(snapshot.size);
+      if (!filterName) {
+        onCount(snapshot.size);
+        return;
+      }
+      const count = snapshot.docs.filter(
+        (d) => (d.get('userName') as string) === filterName
+      ).length;
+      onCount(count);
     },
     (err) => {
       console.warn('Firestore todayCount subscription error:', err);
