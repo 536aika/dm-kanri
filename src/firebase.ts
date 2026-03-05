@@ -67,7 +67,14 @@ export function subscribeTodayCount(
     constraints.push(where('userName', '==', userName.trim()));
   }
   const q = query(collection(firestore, COLLECTION), ...constraints);
-  return onSnapshot(q, (snapshot) => {
-    onCount(snapshot.size);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      onCount(snapshot.size);
+    },
+    (err) => {
+      console.warn('Firestore todayCount subscription error:', err);
+      onCount(0);
+    }
+  );
 }

@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "dm_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "userName", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

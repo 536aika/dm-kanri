@@ -36,9 +36,22 @@
 5. デプロイ  
    Vercel にプロジェクトを接続し、ルートで `vercel` または Git 連携でデプロイ。環境変数は Vercel の「Settings → Environment Variables」で設定。
 
+6. **Firestore 複合インデックス**（名前別の本日件数を使う場合）  
+   `dm_records` で `date` と `userName` の複合クエリを使うため、初回実行時に Firebase がインデックス作成を促すことがあります。ブラウザコンソールのエラーに表示されるリンクから作成するか、プロジェクトルートで `firebase deploy --only firestore:indexes`（要 Firebase CLI と `firestore.indexes.json`）で一括作成できます。
+
 ## 主な仕様
 
 - 名前入力のみで利用開始（ログイン不要・Cookie/セッション非依存）。
 - DM送信記録は Firestore の `dm_records` に保存し、同時に Google スプレッドシートに月別シート（例: 2026-03）で追記。
 - 1日 150 件まで。25・50・75・100・125 件で Break Time（1時間送信ロック）。Break Time は localStorage で永続化。
 - 0:00（日本時間）で日次リセット（クライアント側の日付フィルタで対応）。
+
+## トラブルシューティング
+
+- **2件目以降送信できない・画面がリセットされない**  
+  Firestore の「本日の件数」用クエリで複合インデックスが必要です。上記「Firestore 複合インデックス」を作成してください。
+
+- **スプレッドシートに反映されない**  
+  - Vercel の環境変数に `GOOGLE_SHEET_ID` と `GOOGLE_SERVICE_ACCOUNT_JSON` が設定されているか確認。  
+  - スプレッドシートをサービスアカウントのメール（JSON 内の `client_email`）に「編集者」で共有しているか確認。  
+  - 送信成功時に「（スプレッドシートへの反映に失敗しました）」と出る場合は、上記または API のログ（Vercel Dashboard → Logs）を確認。

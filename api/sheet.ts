@@ -25,7 +25,8 @@ interface SheetPayload {
 function getAuth() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!raw) throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is not set');
-  const key = JSON.parse(raw);
+  const normalized = raw.replace(/\\n/g, '\n');
+  const key = JSON.parse(normalized);
   const auth = new google.auth.GoogleAuth({
     credentials: key,
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],

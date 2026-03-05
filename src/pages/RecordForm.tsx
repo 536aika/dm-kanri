@@ -121,49 +121,52 @@ export default function RecordForm() {
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
     setSubmitting(true);
+    const link = normalizeAccountLink(form.accountLink);
+    const payload: DmRecordForm = {
+      ...form,
+      accountLink: link,
+    };
     try {
-      const link = normalizeAccountLink(form.accountLink);
-      const payload: DmRecordForm = {
-        ...form,
-        accountLink: link,
-      };
       await addDmRecord(payload);
-      const newCount = todayCount + 1;
-      if (shouldStartBreak(newCount)) {
-        setBreakLock(userName);
-      }
-      try {
-        await fetch('/api/sheet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userName: payload.userName,
-            accountLink: payload.accountLink,
-            businessType: payload.businessType,
-            followerRange: payload.followerRange,
-            hasChampagne: payload.hasChampagne,
-            hasChampagneTower: payload.hasChampagneTower,
-            sentAt: nowISOJST(),
-            date: todayJST(),
-            month: monthJST(),
-          }),
-        });
-      } catch {
-        // Sheet sync failure is non-blocking
-      }
-      setForm((prev) => ({ ...initialForm, userName: prev.userName }));
-      setFormKey((k) => k + 1);
-      setSnackMessage('送信しました ✅');
-      setSnackSeverity('success');
-      setSnackOpen(true);
     } catch (err) {
+      setSubmitting(false);
       setSnackMessage('送信に失敗しました。通信を確認してもう一度お試しください。');
       setSnackSeverity('error');
       setSnackOpen(true);
-    } finally {
-      setSubmitting(false);
+      return;
     }
-  }, [canSubmit, form, todayCount]);
+    const newCount = todayCount + 1;
+    if (shouldStartBreak(newCount)) {
+      setBreakLock(userName);
+    }
+    let sheetOk = false;
+    try {
+      const res = await fetch('/api/sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userName: payload.userName,
+          accountLink: payload.accountLink,
+          businessType: payload.businessType,
+          followerRange: payload.followerRange,
+          hasChampagne: payload.hasChampagne,
+          hasChampagneTower: payload.hasChampagneTower,
+          sentAt: nowISOJST(),
+          date: todayJST(),
+          month: monthJST(),
+        }),
+      });
+      sheetOk = res.ok;
+    } catch {
+      // ネットワークエラー等
+    }
+    setSubmitting(false);
+    setForm((prev) => ({ ...initialForm, userName: prev.userName }));
+    setFormKey((k) => k + 1);
+    setSnackMessage(sheetOk ? '送信しました ✅' : '送信しました ✅（スプレッドシートへの反映に失敗しました）');
+    setSnackSeverity('success');
+    setSnackOpen(true);
+  }, [canSubmit, form, todayCount, userName]);
 
   const handleLogout = () => {
     try {
