@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
+  Alert,
   Box,
   Button,
   Container,
@@ -59,7 +60,10 @@ export default function RecordForm() {
   const [todayCount, setTodayCount] = useState(0);
   const [breakEndRemaining, setBreakEndRemaining] = useState(0);
   const [snackOpen, setSnackOpen] = useState(false);
+  const [snackMessage, setSnackMessage] = useState('');
+  const [snackSeverity, setSnackSeverity] = useState<'success' | 'error'>('success');
   const [submitting, setSubmitting] = useState(false);
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     if (!userName) {
@@ -135,7 +139,14 @@ export default function RecordForm() {
       } catch {
         // Sheet sync failure is non-blocking
       }
-      setForm({ ...initialForm, userName: form.userName });
+      setForm((prev) => ({ ...initialForm, userName: prev.userName }));
+      setFormKey((k) => k + 1);
+      setSnackMessage('送信しました ✅');
+      setSnackSeverity('success');
+      setSnackOpen(true);
+    } catch (err) {
+      setSnackMessage('送信に失敗しました。通信を確認してもう一度お試しください。');
+      setSnackSeverity('error');
       setSnackOpen(true);
     } finally {
       setSubmitting(false);
@@ -175,7 +186,7 @@ export default function RecordForm() {
           </Button>
         </Box>
 
-        <Container maxWidth="sm" sx={{ py: 3 }}>
+        <Container key={formKey} maxWidth="sm" sx={{ py: 3 }}>
           <TextField
             label="アカウントリンク"
             value={form.accountLink}
@@ -280,9 +291,18 @@ export default function RecordForm() {
         open={snackOpen}
         autoHideDuration={4000}
         onClose={() => setSnackOpen(false)}
-        message="送信しました✅"
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ mt: 2 }}
+      >
+        <Alert
+          onClose={() => setSnackOpen(false)}
+          severity={snackSeverity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
